@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meme Lab</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>Meme Lab</h1>
+      <p>Experiment with meme ideas and manage your collection.</p>
+    </header>
+
+    <main>
+      <section class="create-meme">
+        <h2>Create a meme</h2>
+        <form id="meme-form">
+          <label for="title">Title</label>
+          <input id="title" name="title" type="text" placeholder="Spongebob says..." required />
+
+          <label for="imageUrl">Image URL</label>
+          <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." required />
+
+          <button type="submit">Add Meme</button>
+        </form>
+      </section>
+
+      <section class="meme-gallery">
+        <h2>Latest memes</h2>
+        <div id="meme-list" class="meme-list"></div>
+      </section>
+    </main>
+
+    <template id="meme-template">
+      <article class="meme-card">
+        <img data-role="image" alt="Meme" />
+        <div class="meme-content">
+          <h3 data-role="title"></h3>
+          <time data-role="timestamp"></time>
+        </div>
+      </article>
+    </template>
+
+    <footer class="site-footer">
+      <small>&copy; <span id="year"></span> Meme Lab</small>
+    </footer>
+
+    <script src="./main.js" defer></script>
+  </body>
+</html>

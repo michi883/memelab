@@ -19,32 +19,41 @@
           <p class="brand-tagline">Analyze, Remix, and Discover Your Funny</p>
         </div>
       </div>
-      <div class="settings">
-        <button id="settings-toggle" class="settings-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="settings-menu" title="Open settings">
-          ⚙️
-        </button>
-        <div id="settings-menu" class="settings-menu" role="menu" tabindex="-1">
-          <button id="toggle-offline" class="settings-menu__item" type="button" role="menuitem" aria-pressed="false">
-            Go Offline
-          </button>
-        </div>
-      </div>
     </header>
 
     <main>
       <section class="trending-meme">
         <div class="trending-header">
-          <h2>Trending from r/memes</h2>
+          <h2 class="visually-hidden">Trending from r/memes</h2>
           <div class="trending-actions">
-            <button id="next-trending" type="button">Fetch Meme 🎲</button>
-            <button id="analyze-meme" type="button">Analyze</button>
+            <button id="next-trending" type="button">FETCH MEME</button>
+            <button id="analyze-meme" type="button">ANALYZE</button>
+            <button id="remix-toggle" type="button" aria-controls="remix-panel" aria-expanded="false">REMIX</button>
           </div>
         </div>
         <article id="trending-card" class="trending-card is-hidden">
           <div id="loading-overlay" class="loading-overlay is-hidden" aria-live="assertive">
             <span class="loading-text">Fetching the funny…</span>
           </div>
-          <img id="trending-image" alt="Trending meme" />
+          <div class="meme-visuals">
+            <figure class="meme-frame original">
+              <img id="trending-image" alt="Trending meme" />
+              <figcaption>Original</figcaption>
+            </figure>
+            <figure id="remix-frame" class="meme-frame remix is-hidden">
+              <img id="remix-visual" alt="Remixed meme" />
+              <figcaption>Remix</figcaption>
+            </figure>
+          </div>
+          <div class="remix-quick-input is-hidden" id="remix-quick-input">
+            <textarea
+              id="remix-input"
+              class="remix-input"
+              rows="2"
+              placeholder="Describe how you want to remix this meme..."
+            ></textarea>
+            <p id="remix-status" class="remix-status"></p>
+          </div>
           <div class="trending-content">
             <h3 id="trending-title"></h3>
             <p class="trending-meta">
@@ -56,17 +65,16 @@
           </div>
         </article>
         <p id="trending-status" class="trending-status"></p>
-        <p id="offline-indicator" class="offline-indicator is-hidden" role="status" aria-live="polite">Offline mode</p>
         <section id="analysis-panel" class="analysis-panel is-hidden" aria-live="polite">
           <div class="analysis-header">
-            <h3>Humor Genome</h3>
-            <button id="humor-info" class="analysis-info" type="button" aria-label="What are Humor Genome labels?" aria-expanded="false" aria-controls="humor-explainer">ℹ️</button>
+            <h3>Humor Analysis</h3>
+            <button id="humor-info" class="analysis-info" type="button" aria-label="What is included in the humor analysis?" aria-expanded="false" aria-controls="humor-explainer">ℹ️</button>
           </div>
           <p id="analysis-status" class="analysis-status"></p>
           <p id="analysis-summary" class="analysis-summary"></p>
           <div id="analysis-tags" class="analysis-tags"></div>
           <div id="humor-explainer" class="analysis-explainer is-hidden">
-            <h4>Humor Genome labels</h4>
+            <h4>Humor Analysis Notes</h4>
             <div class="explainer-columns">
               <div>
                 <h5>Format / Structure</h5>
@@ -101,6 +109,7 @@
             </div>
           </div>
         </section>
+        <section id="remix-panel" class="remix-panel is-hidden is-disabled" aria-live="polite"></section>
       </section>
     </main>
 
@@ -108,6 +117,6 @@
       <small>&copy; <span id="year"></span> Meme Lab</small>
     </footer>
 
-    <script src="./main.js" defer></script>
+    <script type="module" src="./main.js"></script>
   </body>
 </html>

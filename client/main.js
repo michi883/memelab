@@ -1,226 +1,49 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+import { STATUS_MESSAGES } from './constants.js';
+import { getTrending, analyzeMeme as requestAnalysis, remixMeme as requestRemix } from './api.js';
+import {
+  elements,
+  setTrendingStatus,
+  setLoadingOverlay,
+  resetAnalysisPanel,
+  showAnalysisLoading,
+  renderAnalysis,
+  showAnalysisError,
+  setRemixAvailability,
+  setRemixStatus,
+  toggleRemixLoading,
+  animateRemixGallery,
+  setImageSource,
+  setRemixPanelVisibility
+} from './ui.js';
 
-const settingsContainer = document.querySelector('.settings');
-const settingsToggle = document.getElementById('settings-toggle');
-const settingsMenu = document.getElementById('settings-menu');
-
-const trendingCard = document.getElementById('trending-card');
-const trendingImage = document.getElementById('trending-image');
-const trendingTitle = document.getElementById('trending-title');
-const trendingAuthor = document.getElementById('trending-author');
-const trendingUps = document.getElementById('trending-ups');
-const trendingLink = document.getElementById('trending-link');
-const trendingStatus = document.getElementById('trending-status');
-const offlineIndicator = document.getElementById('offline-indicator');
-const loadingOverlay = document.getElementById('loading-overlay');
-const nextTrendingButton = document.getElementById('next-trending');
-const analyzeButton = document.getElementById('analyze-meme');
-const analysisPanel = document.getElementById('analysis-panel');
-const analysisStatus = document.getElementById('analysis-status');
-const analysisSummary = document.getElementById('analysis-summary');
-const analysisTags = document.getElementById('analysis-tags');
-const infoToggle = document.getElementById('humor-info');
-const toggleOfflineButton = document.getElementById('toggle-offline');
-const yearBadge = document.getElementById('year');
+const {
+  trendingCard,
+  trendingTitle,
+  trendingAuthor,
+  trendingUps,
+  trendingLink,
+  nextTrendingButton,
+  analyzeButton,
+  remixInput,
+  infoToggle,
+  remixToggleButton,
+  remixPanel,
+  remixFrame,
+  remixVisual
+} = elements;
 
 let trendingAfter = null;
 let trendingLoading = false;
-let offlineMode = false;
 let currentMeme = null;
+let remixInProgress = false;
+let remixSupported = false;
 
-if (analyzeButton) {
-  analyzeButton.disabled = true;
-}
-
-if (yearBadge) {
-  yearBadge.textContent = String(new Date().getFullYear());
-}
-
-function setTrendingStatus(message, isError = false) {
-  if (!trendingStatus) {
-    return;
-  }
-
-  trendingStatus.textContent = message || '';
-  trendingStatus.classList.toggle('is-error', Boolean(message) && isError);
-}
-
-function setOfflineIndicator(active, message) {
-  if (!offlineIndicator) {
-    return;
-  }
-
-  offlineIndicator.classList.toggle('is-hidden', !active);
-  if (active && message) {
-    offlineIndicator.textContent = message;
-  } else if (active) {
-    offlineIndicator.textContent = 'Offline mode';
-  }
-}
-
-function setLoadingOverlay(active) {
-  if (!loadingOverlay) {
-    return;
-  }
-
-  loadingOverlay.classList.toggle('is-hidden', !active);
-}
-
-function resetAnalysisPanel() {
-  if (!analysisPanel || !analysisTags || !analysisStatus) {
-    return;
-  }
-
-  analysisPanel.classList.add('is-hidden');
-  analysisPanel.classList.remove('is-loading');
-  analysisTags.innerHTML = '';
-  analysisStatus.textContent = '';
-  if (analysisSummary) {
-    analysisSummary.textContent = '';
-    analysisSummary.classList.add('is-hidden');
-  }
-  const explainer = document.getElementById('humor-explainer');
-  if (explainer) {
-    explainer.classList.add('is-hidden');
-  }
-  if (infoToggle) {
-    infoToggle.setAttribute('aria-expanded', 'false');
-  }
+function clearCurrentMeme() {
   currentMeme = null;
   if (analyzeButton) {
     analyzeButton.disabled = true;
   }
-}
-
-function showAnalysisLoading() {
-  if (!analysisPanel || !analysisStatus || !analysisTags) {
-    return;
-  }
-
-  analysisPanel.classList.remove('is-hidden');
-  analysisPanel.classList.add('is-loading');
-  analysisTags.innerHTML = '';
-  analysisStatus.textContent = 'Analyzing humor genome…';
-  if (analysisSummary) {
-    analysisSummary.textContent = '';
-    analysisSummary.classList.add('is-hidden');
-  }
-}
-
-function renderAnalysis(result) {
-  if (!analysisPanel || !analysisTags || !analysisStatus) {
-    return;
-  }
-
-  analysisPanel.classList.remove('is-hidden');
-  analysisPanel.classList.remove('is-loading');
-
-  const provider = (result?.meta?.provider || result?.source || '').toString().toLowerCase();
-  const fallback = Boolean(result?.meta?.fallback);
-  const reason = result?.meta?.reason ? String(result.meta.reason) : '';
-  const formattedReason = reason
-    ? reason
-        .split('&')
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .map((part) => {
-          const cleaned = part.replace(/_/g, ' ');
-          const capitalized = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-          return capitalized.replace(/Api/gi, 'API');
-        })
-        .join(' & ')
-    : '';
-  let statusLabel = 'Humor Genome labels';
-  if (fallback) {
-    statusLabel += formattedReason ? ` (fallback – ${formattedReason})` : ' (fallback)';
-  } else if (provider) {
-    const readableProvider = provider === 'gpt-5' ? 'GPT-5' : provider.charAt(0).toUpperCase() + provider.slice(1);
-    statusLabel += ` (${readableProvider})`;
-  }
-  analysisStatus.textContent = statusLabel;
-
-  const { categories = {}, tags = [] } = result || {};
-  const baseTags = tags.length ? tags : [
-    ...(categories.format || []),
-    ...(categories.cognitive || []),
-    ...(categories.emotional || [])
-  ];
-  const uniqueTags = Array.from(new Set(baseTags.filter(Boolean)));
-
-  if (analysisSummary) {
-    const summaryText = typeof result?.summary === 'string' ? result.summary.trim() : '';
-    analysisSummary.textContent = summaryText || '';
-    analysisSummary.classList.toggle('is-hidden', !summaryText);
-  }
-
-  analysisTags.innerHTML = '';
-  uniqueTags.forEach((tag, index) => {
-    const bubble = document.createElement('span');
-    bubble.className = 'analysis-tag';
-    bubble.style.setProperty('--bubble-index', String(index));
-    bubble.textContent = tag;
-    analysisTags.appendChild(bubble);
-  });
-}
-
-function showAnalysisError(message) {
-  if (!analysisPanel || !analysisStatus || !analysisTags) {
-    return;
-  }
-
-  analysisPanel.classList.remove('is-hidden');
-  analysisPanel.classList.remove('is-loading');
-  analysisTags.innerHTML = '';
-  analysisStatus.textContent = message;
-  if (analysisSummary) {
-    analysisSummary.textContent = '';
-    analysisSummary.classList.add('is-hidden');
-  }
-}
-
-function updateOfflineToggle() {
-  if (!toggleOfflineButton) {
-    return;
-  }
-
-  toggleOfflineButton.textContent = offlineMode ? 'Go Online' : 'Go Offline';
-  toggleOfflineButton.setAttribute('aria-pressed', String(offlineMode));
-}
-
-function setSettingsOpen(open) {
-  if (!settingsContainer || !settingsToggle) {
-    return;
-  }
-
-  settingsContainer.classList.toggle('is-open', open);
-  settingsToggle.setAttribute('aria-expanded', String(open));
-
-  if (open && settingsMenu) {
-    settingsMenu.focus?.();
-  }
-}
-
-function toggleSettingsMenu() {
-  if (!settingsContainer) {
-    return;
-  }
-
-  const isOpen = settingsContainer.classList.contains('is-open');
-  setSettingsOpen(!isOpen);
-}
-
-function setImageSource(url, { forceRefresh = false } = {}) {
-  if (!trendingImage) {
-    return;
-  }
-
-  if (forceRefresh) {
-    // Clearing first ensures the browser requests the new asset even if the
-    // URL matches the previous one or the cached image is still in memory.
-    trendingImage.src = '';
-  }
-
-  trendingImage.src = url;
+  setRemixAvailability(false);
 }
 
 async function fetchTrendingMeme(resetCursor = false) {
@@ -232,89 +55,71 @@ async function fetchTrendingMeme(resetCursor = false) {
     return;
   }
 
-  resetAnalysisPanel();
-  if (analyzeButton) {
-    analyzeButton.disabled = true;
-  }
-
   if (resetCursor) {
     trendingAfter = null;
   }
+
+  resetAnalysisPanel();
+  clearCurrentMeme();
+  setTrendingStatus('');
 
   trendingLoading = true;
   nextTrendingButton.disabled = true;
   trendingCard.classList.remove('is-hidden');
   setLoadingOverlay(true);
-  setTrendingStatus('');
-
-  const params = new URLSearchParams();
-  if (offlineMode) {
-    params.set('offline', 'true');
-  } else if (trendingAfter) {
-    params.set('after', trendingAfter);
-  }
-
-  const queryString = params.toString();
-  const url = `${API_BASE_URL}/memes/trending${queryString ? `?${queryString}` : ''}`;
 
   try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      let message = 'Failed to fetch trending meme';
-      try {
-        const body = await response.json();
-        message = body?.error || message;
-      } catch {
-        // Ignore parse errors and keep the default message.
-      }
-      throw new Error(message);
-    }
-
-    const payload = await response.json();
+    const afterParam = trendingAfter ? { after: trendingAfter } : undefined;
+    const payload = await getTrending(afterParam);
     const meme = payload?.data;
-    const page = payload?.page;
+    const page = payload?.page || {};
+    remixSupported = Boolean(payload?.capabilities?.remix);
 
     if (!meme || !meme.imageUrl) {
       throw new Error('Trending meme response is missing data');
     }
 
-    if (!offlineMode && page?.offline !== true) {
-      trendingAfter = page?.after ?? null;
-    } else {
-      trendingAfter = null;
+    trendingAfter = page.after ?? null;
+
+    setImageSource(meme.imageUrl);
+    if (trendingTitle) {
+      trendingTitle.textContent = meme.title || 'Untitled meme';
+    }
+    if (trendingAuthor) {
+      trendingAuthor.textContent = meme.author ? `u/${meme.author}` : 'unknown';
+    }
+    if (trendingUps) {
+      const upsValue = typeof meme.ups === 'number' ? meme.ups.toLocaleString() : '0';
+      trendingUps.textContent = upsValue;
+    }
+    if (trendingLink) {
+      trendingLink.href = meme.permalink || '#';
+      trendingLink.textContent = 'View source';
     }
 
-    const forceRefresh = offlineMode || page?.offline === true;
+    currentMeme = {
+      id: meme.id || '',
+      title: meme.title || '',
+      imageUrl: meme.imageUrl || ''
+    };
 
-    setImageSource(meme.imageUrl, { forceRefresh });
-    trendingImage.alt = meme.title || 'Trending meme';
-    trendingTitle.textContent = meme.title || 'Untitled meme';
-    trendingAuthor.textContent = meme.author ? `u/${meme.author}` : 'unknown';
-    trendingUps.textContent = typeof meme.ups === 'number' ? meme.ups.toLocaleString() : '0';
-    trendingLink.href = meme.permalink || '#';
-    trendingLink.textContent = page?.offline === true ? 'View cached copy' : 'View source';
-
-    currentMeme = { title: meme.title || '', imageUrl: meme.imageUrl || '', sourceOffline: offlineMode || page?.offline === true };
     if (analyzeButton) {
       analyzeButton.disabled = false;
     }
 
-    trendingCard.classList.remove('is-hidden');
-
-    if (page?.offline === true || offlineMode) {
-      const origin = page?.offline === true ? 'Offline cache active.' : 'Offline mode enabled.';
-      const reason = page?.reason ? `${page.reason}.` : '';
-      const message = `${origin} ${reason}`.trim() || 'Offline mode';
-      setTrendingStatus(`${origin} ${reason} Showing cached meme.`.trim(), false);
-      setOfflineIndicator(true, message);
-    } else {
-      setTrendingStatus('');
-      setOfflineIndicator(false);
+    if (remixFrame) {
+      remixFrame.classList.add('is-hidden');
     }
+    if (remixVisual) {
+      remixVisual.removeAttribute('src');
+    }
+    setRemixStatus(remixSupported ? '' : 'Remixing requires a configured Gemini API key.', !remixSupported);
+    setRemixAvailability(remixSupported && Boolean(currentMeme.imageUrl));
+
+    setTrendingStatus('');
   } catch (error) {
     console.error(error);
-    setTrendingStatus(error.message, true);
+    setTrendingStatus(error.message || 'Failed to fetch trending meme', true);
   } finally {
     trendingLoading = false;
     if (nextTrendingButton) {
@@ -323,11 +128,13 @@ async function fetchTrendingMeme(resetCursor = false) {
     if (analyzeButton) {
       analyzeButton.disabled = !currentMeme;
     }
+    const canRemix = remixSupported && Boolean(currentMeme?.imageUrl);
+    setRemixAvailability(canRemix);
     setLoadingOverlay(false);
   }
 }
 
-async function analyzeMeme(meme) {
+async function analyzeCurrentMeme(meme) {
   if (!meme || (!meme.title && !meme.imageUrl)) {
     return;
   }
@@ -338,30 +145,7 @@ async function analyzeMeme(meme) {
   }
 
   try {
-    const offline = Boolean(meme.sourceOffline || offlineMode);
-    const response = await fetch(`${API_BASE_URL}/memes/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: meme.title,
-        imageUrl: meme.imageUrl,
-        sourceOffline: offline,
-        offline
-      })
-    });
-
-    if (!response.ok) {
-      let message = 'Analysis failed';
-      try {
-        const body = await response.json();
-        message = body?.error || message;
-      } catch {
-        // ignore JSON parse errors
-      }
-      throw new Error(message);
-    }
-
-    const payload = await response.json();
+    const payload = await requestAnalysis({ title: meme.title, imageUrl: meme.imageUrl });
     renderAnalysis(payload?.data);
   } catch (error) {
     console.error(error);
@@ -373,8 +157,46 @@ async function analyzeMeme(meme) {
   }
 }
 
+async function remixCurrentMeme(meme, instructions) {
+  if (!meme || remixInProgress) {
+    return;
+  }
+
+  remixInProgress = true;
+  toggleRemixLoading(true);
+  setRemixStatus(STATUS_MESSAGES.remixing);
+
+  try {
+    const payload = await requestRemix({ imageUrl: meme.imageUrl, instructions });
+    const editedImageUrl = payload?.editedImageUrl;
+
+    if (!editedImageUrl) {
+      throw new Error('Nano Banana did not return a remixed image.');
+    }
+
+    if (remixFrame) {
+      remixFrame.classList.remove('is-hidden');
+    }
+
+    if (remixVisual) {
+      remixVisual.src = editedImageUrl;
+      remixVisual.alt = `Remixed meme based on ${meme.title || 'original'}`;
+    }
+
+    animateRemixGallery();
+    setRemixStatus(STATUS_MESSAGES.remixReady);
+  } catch (error) {
+    console.error(error);
+    setRemixStatus(error.message || STATUS_MESSAGES.remixFailed, true);
+  } finally {
+    remixInProgress = false;
+    toggleRemixLoading(false);
+  }
+}
+
 if (nextTrendingButton) {
   nextTrendingButton.addEventListener('click', () => {
+    setRemixAvailability(false);
     fetchTrendingMeme();
   });
 }
@@ -386,7 +208,56 @@ if (analyzeButton) {
       return;
     }
 
-    analyzeMeme(currentMeme);
+    analyzeCurrentMeme(currentMeme);
+  });
+}
+
+setRemixPanelVisibility(false);
+
+function triggerRemix() {
+  if (!currentMeme || !currentMeme.imageUrl) {
+    setRemixStatus('Fetch a meme first to remix.', true);
+    return;
+  }
+
+  if (!remixSupported) {
+    setRemixStatus('Remixing requires a configured Gemini API key.', true);
+    return;
+  }
+
+  const instructions = remixInput ? remixInput.value.trim() : '';
+  if (!instructions) {
+    setRemixStatus('Describe how you want to remix this meme.', true);
+    if (remixInput) {
+      remixInput.focus({ preventScroll: true });
+    }
+    return;
+  }
+
+  remixCurrentMeme(currentMeme, instructions);
+}
+
+if (remixInput) {
+  remixInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      triggerRemix();
+    }
+  });
+  remixInput.addEventListener('blur', () => {
+    if (remixInput.value.trim()) {
+      setRemixStatus('');
+    }
+  });
+}
+
+if (remixToggleButton) {
+  remixToggleButton.addEventListener('click', () => {
+    if (remixToggleButton.disabled) {
+      return;
+    }
+
+    triggerRemix();
   });
 }
 
@@ -402,48 +273,5 @@ if (infoToggle) {
   });
 }
 
-if (settingsToggle) {
-  settingsToggle.addEventListener('click', (event) => {
-    event.stopPropagation();
-    toggleSettingsMenu();
-  });
-}
-
-if (toggleOfflineButton) {
-  toggleOfflineButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    offlineMode = !offlineMode;
-    updateOfflineToggle();
-
-    const statusMessage = offlineMode
-      ? 'Offline mode enabled. Serving memes from cache.'
-      : 'Back online. Fetching memes from Reddit.';
-
-    setTrendingStatus(statusMessage, false);
-    setOfflineIndicator(offlineMode, offlineMode ? 'Offline mode enabled' : undefined);
-    setSettingsOpen(false);
-    fetchTrendingMeme(true);
-  });
-
-  updateOfflineToggle();
-}
-
-if (settingsContainer) {
-  document.addEventListener('click', (event) => {
-    if (!settingsContainer.classList.contains('is-open')) {
-      return;
-    }
-
-    if (!settingsContainer.contains(event.target)) {
-      setSettingsOpen(false);
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && settingsContainer.classList.contains('is-open')) {
-      setSettingsOpen(false);
-    }
-  });
-}
-
 fetchTrendingMeme();
+setRemixAvailability(false);

@@ -1,8 +1,8 @@
 :root {
   color-scheme: dark;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
-  background-color: #05070f;
+  background-color: #040814;
   color: #e6ebff;
 }
 
@@ -11,23 +11,24 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at top, #0b1638 0%, #05070f 60%, #020309 100%);
+  background: radial-gradient(circle at 20% -10%, #0c1f4b 0%, #050a18 55%, #010208 100%);
 }
 
 .site-header,
 .site-footer {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #0f2b5b, #030510);
+  padding: 0.85rem 1.75rem;
+  background: linear-gradient(120deg, rgba(12, 28, 64, 0.95), rgba(6, 14, 32, 0.95));
   color: #f3f6ff;
   border-bottom: 1px solid rgba(95, 122, 196, 0.25);
-  position: relative;
+  box-shadow: 0 14px 28px rgba(4, 10, 24, 0.28);
 }
 
 .site-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: space-between;
+  gap: clamp(1.9rem, 4vw, 4.2rem);
+  text-align: left;
 }
 
 .site-footer {
@@ -36,15 +37,52 @@ body {
   text-align: center;
 }
 
-.header-text {
-  max-width: 640px;
-  margin: 0 auto;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: clamp(2rem, 4.5vw, 4.5rem);
+}
+
+.brand-logo {
+  width: clamp(135px, 16vw, 196px);
+  height: auto;
+  border-radius: 1rem;
+  box-shadow: 0 22px 38px rgba(2, 6, 14, 0.42);
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.brand-logo:hover {
+  transform: translateY(-3px) scale(1.05);
+  filter: brightness(1.08);
+}
+
+.brand-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.brand-title {
+  margin: 0;
+  font-family: 'Syne', 'Manrope', 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(2.4rem, 4.8vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brand-tagline {
+  margin: 0;
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  color: rgba(214, 225, 255, 0.92);
+  letter-spacing: 0.06em;
 }
 
 .settings {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .settings-button {
@@ -109,21 +147,21 @@ body {
 
 main {
   flex: 1;
-  padding: 2rem;
+  padding: clamp(1.1rem, 3vw, 1.8rem);
   display: grid;
   place-items: center;
 }
 
 .trending-meme {
-  width: min(720px, 100%);
+  width: min(760px, 100%);
   display: grid;
   justify-items: center;
   gap: 1rem;
   background: linear-gradient(160deg, rgba(14, 29, 66, 0.9), rgba(5, 10, 24, 0.95));
   border-radius: 1.2rem;
-  padding: 2rem;
+  padding: clamp(1.4rem, 3.3vw, 2rem);
   border: 1px solid rgba(60, 92, 168, 0.35);
-  box-shadow: 0 24px 42px rgba(2, 6, 14, 0.65);
+  box-shadow: 0 22px 36px rgba(2, 6, 14, 0.58);
 }
 
 .trending-header {
@@ -417,20 +455,44 @@ main {
 }
 
 @media (max-width: 640px) {
-  main {
-    padding: 1.5rem;
+  .site-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
   }
 
-  .trending-meme {
-    padding: 1.5rem;
+  .brand {
+    width: 100%;
+    justify-content: center;
   }
 
-  .trending-actions {
+  .brand-logo {
+    width: clamp(110px, 24vw, 150px);
+  }
+
+  .settings {
     width: 100%;
     justify-content: flex-end;
   }
 
+  main {
+    padding: 1.1rem;
+  }
+
+  .trending-meme {
+    padding: 1.35rem;
+  }
+
+  .trending-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
   .trending-actions button {
-    padding-inline: 1.1rem;
+    flex: 1 1 48%;
+    min-width: 132px;
+    padding-inline: 1rem;
   }
 }

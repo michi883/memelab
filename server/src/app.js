@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import memeRoutes from './memeRoutes.js';
+import routes from './routes.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +16,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Meme Lab backend is running' });
 });
 
-app.use('/api/memes', memeRoutes);
+app.use('/api/memes', routes);
 
 export default app;

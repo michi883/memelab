@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMemes, createMeme, getTrendingMeme, analyzeMeme } from './memeController.js';
+import { getMemes, createMeme, getTrendingMeme, analyzeMeme } from './memes.js';
 
 const router = Router();
 

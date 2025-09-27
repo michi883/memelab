@@ -17,8 +17,8 @@ memelab/
 │   │   └── cache/   # Local meme assets used for offline mode
 │   └── src/
 │       ├── app.js
-│       ├── memeController.js
-│       ├── memeRoutes.js
+│       ├── memes.js
+│       ├── routes.js
 │       ├── data/
 │       └── server.js
 └── README.md

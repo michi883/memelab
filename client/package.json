@@ -1,0 +1,13 @@
+{
+  "name": "meme-lab-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static frontend for Meme Lab",
+  "scripts": {
+    "dev": "serve . --listen 5173 --single",
+    "start": "serve . --listen 4173 --single"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

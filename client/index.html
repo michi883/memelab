@@ -8,39 +8,94 @@
   </head>
   <body>
     <header class="site-header">
-      <h1>Meme Lab</h1>
-      <p>Experiment with meme ideas and manage your collection.</p>
+      <div class="header-text">
+        <h1>Meme Lab</h1>
+        <p>Dive into the freshest memes from Reddit's r/memes community — even when you're offline.</p>
+      </div>
+      <div class="settings">
+        <button id="settings-toggle" class="settings-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="settings-menu" title="Open settings">
+          ⚙️
+        </button>
+        <div id="settings-menu" class="settings-menu" role="menu" tabindex="-1">
+          <button id="toggle-offline" class="settings-menu__item" type="button" role="menuitem" aria-pressed="false">
+            Go Offline
+          </button>
+        </div>
+      </div>
     </header>
 
     <main>
-      <section class="create-meme">
-        <h2>Create a meme</h2>
-        <form id="meme-form">
-          <label for="title">Title</label>
-          <input id="title" name="title" type="text" placeholder="Spongebob says..." required />
-
-          <label for="imageUrl">Image URL</label>
-          <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." required />
-
-          <button type="submit">Add Meme</button>
-        </form>
-      </section>
-
-      <section class="meme-gallery">
-        <h2>Latest memes</h2>
-        <div id="meme-list" class="meme-list"></div>
+      <section class="trending-meme">
+        <div class="trending-header">
+          <h2>Trending from r/memes</h2>
+          <div class="trending-actions">
+            <button id="next-trending" type="button">Fetch Meme 🎲</button>
+            <button id="analyze-meme" type="button">Analyze</button>
+          </div>
+        </div>
+        <article id="trending-card" class="trending-card is-hidden">
+          <div id="loading-overlay" class="loading-overlay is-hidden" aria-live="assertive">
+            <span class="loading-text">Fetching the funny…</span>
+          </div>
+          <img id="trending-image" alt="Trending meme" />
+          <div class="trending-content">
+            <h3 id="trending-title"></h3>
+            <p class="trending-meta">
+              Posted by <span id="trending-author"></span>
+              &bull;
+              <span id="trending-ups"></span> upvotes
+            </p>
+            <a id="trending-link" href="#" target="_blank" rel="noopener noreferrer">View source</a>
+          </div>
+        </article>
+        <p id="trending-status" class="trending-status"></p>
+        <p id="offline-indicator" class="offline-indicator is-hidden" role="status" aria-live="polite">Offline mode</p>
+        <section id="analysis-panel" class="analysis-panel is-hidden" aria-live="polite">
+          <div class="analysis-header">
+            <h3>Humor Genome</h3>
+            <button id="humor-info" class="analysis-info" type="button" aria-label="What are Humor Genome labels?" aria-expanded="false" aria-controls="humor-explainer">ℹ️</button>
+          </div>
+          <p id="analysis-status" class="analysis-status"></p>
+          <p id="analysis-summary" class="analysis-summary"></p>
+          <div id="analysis-tags" class="analysis-tags"></div>
+          <div id="humor-explainer" class="analysis-explainer is-hidden">
+            <h4>Humor Genome labels</h4>
+            <div class="explainer-columns">
+              <div>
+                <h5>Format / Structure</h5>
+                <ul>
+                  <li>Reaction – single face/emotion</li>
+                  <li>Dialogue – two voices or text exchange</li>
+                  <li>Narrative – story progression</li>
+                  <li>Absurdist Visual – surreal or out-of-context</li>
+                  <li>Juxtaposition – unexpected pairing</li>
+                </ul>
+              </div>
+              <div>
+                <h5>Cognitive Style</h5>
+                <ul>
+                  <li>Literal – straightforward setup</li>
+                  <li>Wordplay – puns and clever phrasing</li>
+                  <li>Subversion – twist or misdirection</li>
+                  <li>Meta – joke about the meme itself</li>
+                  <li>Exaggeration – overblown logic</li>
+                </ul>
+              </div>
+              <div>
+                <h5>Emotional Tone</h5>
+                <ul>
+                  <li>Wholesome – uplifting vibes</li>
+                  <li>Playful – silly and goofy</li>
+                  <li>Sarcastic – ironic or mocking</li>
+                  <li>Self-Deprecating – turns on the self</li>
+                  <li>Dark – edgy or nihilist</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
-
-    <template id="meme-template">
-      <article class="meme-card">
-        <img data-role="image" alt="Meme" />
-        <div class="meme-content">
-          <h3 data-role="title"></h3>
-          <time data-role="timestamp"></time>
-        </div>
-      </article>
-    </template>
 
     <footer class="site-footer">
       <small>&copy; <span id="year"></span> Meme Lab</small>

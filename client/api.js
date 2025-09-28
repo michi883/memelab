@@ -11,13 +11,16 @@ async function parseError(response, fallbackMessage) {
   return new Error(message);
 }
 
-export async function getTrending({ after } = {}) {
+export async function getTrending({ after, query } = {}) {
   const params = new URLSearchParams();
   if (after) {
     params.set('after', after);
   }
-  const query = params.toString();
-  const url = `${API_BASE_URL}/memes/trending${query ? `?${query}` : ''}`;
+  if (query) {
+    params.set('q', query);
+  }
+  const queryString = params.toString();
+  const url = `${API_BASE_URL}/memes/trending${queryString ? `?${queryString}` : ''}`;
 
   const response = await fetch(url);
   if (!response.ok) {

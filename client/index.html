@@ -26,18 +26,144 @@
         <div class="trending-header">
           <h2 class="visually-hidden">Trending from r/memes</h2>
           <div class="trending-actions">
-            <button id="next-trending" type="button">FETCH MEME</button>
-            <button id="analyze-meme" type="button">ANALYZE</button>
-            <button id="remix-toggle" type="button" aria-controls="remix-panel" aria-expanded="false">REMIX</button>
+            <form id="meme-search" class="meme-search" autocomplete="off">
+              <label class="visually-hidden" for="meme-query">Search for a meme or describe a remix</label>
+              <div class="search-field">
+                <input
+                  id="meme-query"
+                  name="query"
+                  type="search"
+                  placeholder="Search memes or describe a remix..."
+                  aria-label="Search memes or describe a remix"
+                  spellcheck="false"
+                  maxlength="120"
+                />
+                <button id="meme-search-submit" class="search-submit" type="submit" aria-label="Search memes">
+                  <svg class="search-icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
+                    <path
+                      d="M15.8 14.4a6.5 6.5 0 1 0-1.4 1.4l4.2 4.3a1 1 0 0 0 1.4-1.4l-4.2-4.3Zm-5.3.9a4.9 4.9 0 1 1 0-9.8 4.9 4.9 0 0 1 0 9.8Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span class="visually-hidden">Submit search</span>
+                </button>
+              </div>
+              <p id="search-warning" class="search-warning" role="alert"></p>
+            </form>
+            <div class="split-action-row">
+              <div class="action-buttons">
+                <div class="action-button">
+                  <button
+                    id="analyze-meme"
+                    class="icon-button analyze-button"
+                    type="button"
+                    aria-label="Analyze meme"
+                    title="Analyze meme"
+                  >
+                    <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
+                      <rect x="4.5" y="5" width="15" height="14" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7" />
+                      <polyline
+                        points="6.5 14 9.2 11.5 11.4 13 14 8.8 17.5 10.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <line x1="6.5" y1="16" x2="17.5" y2="16" stroke="currentColor" stroke-width="1.1" opacity="0.55" stroke-linecap="round" />
+                      <line x1="6.5" y1="9" x2="6.5" y2="16" stroke="currentColor" stroke-width="1.1" opacity="0.55" stroke-linecap="round" />
+                      <circle cx="9.2" cy="11.5" r="0.9" fill="currentColor" />
+                      <circle cx="11.4" cy="13" r="0.9" fill="currentColor" />
+                      <circle cx="14" cy="8.8" r="0.9" fill="currentColor" />
+                      <circle cx="17.5" cy="10.5" r="0.9" fill="currentColor" />
+                    </svg>
+                    <span class="visually-hidden">Analyze</span>
+                  </button>
+                  <span class="action-hint">Analyze</span>
+                </div>
+                <div class="action-button">
+                  <button
+                    id="remix-toggle"
+                    class="icon-button remix-button"
+                    type="button"
+                    aria-controls="remix-panel"
+                    aria-expanded="false"
+                    aria-label="Remix meme using the search field instructions"
+                    title="Remix meme using the search field instructions"
+                  >
+                  <svg class="icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
+                    <path
+                      d="M6.5 7a1 1 0 0 1 1-1h3.2l1.4 2.1a1 1 0 0 0 .83.44H17l-.88.88a1 1 0 1 0 1.42 1.42l2.8-2.8a1 1 0 0 0 0-1.42l-2.8-2.8a1 1 0 1 0-1.42 1.42L17 6h-3.07l-1.4-2.1A1 1 0 0 0 11.7 3H7.5a3 3 0 0 0 0 6h1.1a1 1 0 0 0 0-2H7.5a1 1 0 0 1-1-1Zm11 8h-3.2l-1.4-2.1a1 1 0 0 0-.83-.44H9l.88-.88a1 1 0 1 0-1.42-1.42l-2.8 2.8a1 1 0 0 0 0 1.42l2.8 2.8a1 1 0 0 0 1.42-1.42L9 15h3.07l1.4 2.1a1 1 0 0 0 .83.44H16.5a3 3 0 0 0 0-6h-1.1a1 1 0 0 0 0 2h1.1a1 1 0 0 1 0 2Z"
+                      fill="currentColor"
+                      transform="translate(0 0.6)"
+                    />
+                  </svg>
+                    <span class="visually-hidden">Remix</span>
+                  </button>
+                  <span class="action-hint">Remix</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <article id="trending-card" class="trending-card is-hidden">
           <div id="loading-overlay" class="loading-overlay is-hidden" aria-live="assertive">
             <span class="loading-text">Fetching the funny…</span>
           </div>
+          <div class="analysis-slot">
+            <section id="analysis-panel" class="analysis-panel is-hidden" aria-live="polite">
+              <div class="analysis-header">
+                <h3>Humor Analysis</h3>
+                <button id="humor-info" class="analysis-info" type="button" aria-label="What is included in the humor analysis?" aria-expanded="false" aria-controls="humor-explainer">ℹ️</button>
+              </div>
+              <p id="analysis-status" class="analysis-status"></p>
+              <p id="analysis-summary" class="analysis-summary"></p>
+              <div id="analysis-tags" class="analysis-tags"></div>
+              <div id="humor-explainer" class="analysis-explainer is-hidden">
+                <h4>Humor Analysis Notes</h4>
+                <div class="explainer-columns">
+                  <div>
+                    <h5>Format / Structure</h5>
+                    <ul>
+                      <li>Reaction – single face/emotion</li>
+                      <li>Dialogue – two voices or text exchange</li>
+                      <li>Narrative – story progression</li>
+                      <li>Absurdist Visual – surreal or out-of-context</li>
+                      <li>Juxtaposition – unexpected pairing</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5>Cognitive Style</h5>
+                    <ul>
+                      <li>Literal – straightforward setup</li>
+                      <li>Wordplay – puns and clever phrasing</li>
+                      <li>Subversion – twist or misdirection</li>
+                      <li>Meta – joke about the meme itself</li>
+                      <li>Exaggeration – overblown logic</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5>Emotional Tone</h5>
+                    <ul>
+                      <li>Wholesome – uplifting vibes</li>
+                      <li>Playful – silly and goofy</li>
+                      <li>Sarcastic – ironic or mocking</li>
+                      <li>Self-Deprecating – turns on the self</li>
+                      <li>Dark – edgy or nihilist</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
           <div class="meme-visuals">
             <figure class="meme-frame original" data-meme-slot="original">
-              <img id="trending-image" alt="Trending meme" />
+              <div class="trending-figure">
+                <img id="trending-image" alt="Trending meme" />
+                <div class="remix-spinner" aria-hidden="true">
+                  <span class="spinner-dot"></span>
+                </div>
+              </div>
               <figcaption>Original</figcaption>
               <div class="meme-rating" data-meme-slot="original">
                 <button type="button" class="thumb-button thumb-up" data-direction="up" aria-label="Thumbs up original meme">👍</button>
@@ -57,15 +183,6 @@
               </div>
             </figure>
           </div>
-          <div class="remix-quick-input is-hidden" id="remix-quick-input">
-            <textarea
-              id="remix-input"
-              class="remix-input"
-              rows="2"
-              placeholder="Describe how you want to remix this meme..."
-            ></textarea>
-            <p id="remix-status" class="remix-status"></p>
-          </div>
           <div class="trending-content">
             <h3 id="trending-title"></h3>
             <p class="trending-meta">
@@ -75,52 +192,9 @@
             </p>
             <a id="trending-link" href="#" target="_blank" rel="noopener noreferrer">View source</a>
           </div>
+          <p id="remix-status" class="remix-status"></p>
         </article>
         <p id="trending-status" class="trending-status"></p>
-        <section id="analysis-panel" class="analysis-panel is-hidden" aria-live="polite">
-          <div class="analysis-header">
-            <h3>Humor Analysis</h3>
-            <button id="humor-info" class="analysis-info" type="button" aria-label="What is included in the humor analysis?" aria-expanded="false" aria-controls="humor-explainer">ℹ️</button>
-          </div>
-          <p id="analysis-status" class="analysis-status"></p>
-          <p id="analysis-summary" class="analysis-summary"></p>
-          <div id="analysis-tags" class="analysis-tags"></div>
-          <div id="humor-explainer" class="analysis-explainer is-hidden">
-            <h4>Humor Analysis Notes</h4>
-            <div class="explainer-columns">
-              <div>
-                <h5>Format / Structure</h5>
-                <ul>
-                  <li>Reaction – single face/emotion</li>
-                  <li>Dialogue – two voices or text exchange</li>
-                  <li>Narrative – story progression</li>
-                  <li>Absurdist Visual – surreal or out-of-context</li>
-                  <li>Juxtaposition – unexpected pairing</li>
-                </ul>
-              </div>
-              <div>
-                <h5>Cognitive Style</h5>
-                <ul>
-                  <li>Literal – straightforward setup</li>
-                  <li>Wordplay – puns and clever phrasing</li>
-                  <li>Subversion – twist or misdirection</li>
-                  <li>Meta – joke about the meme itself</li>
-                  <li>Exaggeration – overblown logic</li>
-                </ul>
-              </div>
-              <div>
-                <h5>Emotional Tone</h5>
-                <ul>
-                  <li>Wholesome – uplifting vibes</li>
-                  <li>Playful – silly and goofy</li>
-                  <li>Sarcastic – ironic or mocking</li>
-                  <li>Self-Deprecating – turns on the self</li>
-                  <li>Dark – edgy or nihilist</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
         <section id="remix-panel" class="remix-panel is-hidden is-disabled" aria-live="polite"></section>
       </section>
     </main>

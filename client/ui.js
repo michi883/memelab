@@ -9,7 +9,10 @@ export const elements = {
   trendingLink: document.getElementById('trending-link'),
   trendingStatus: document.getElementById('trending-status'),
   loadingOverlay: document.getElementById('loading-overlay'),
-  nextTrendingButton: document.getElementById('next-trending'),
+  searchForm: document.getElementById('meme-search'),
+  searchInput: document.getElementById('meme-query'),
+  searchSubmit: document.getElementById('meme-search-submit'),
+  searchWarning: document.getElementById('search-warning'),
   analyzeButton: document.getElementById('analyze-meme'),
   analysisPanel: document.getElementById('analysis-panel'),
   analysisStatus: document.getElementById('analysis-status'),
@@ -17,8 +20,6 @@ export const elements = {
   analysisTags: document.getElementById('analysis-tags'),
   infoToggle: document.getElementById('humor-info'),
   remixPanel: document.getElementById('remix-panel'),
-  remixQuickInput: document.getElementById('remix-quick-input'),
-  remixInput: document.getElementById('remix-input'),
   remixStatus: document.getElementById('remix-status'),
   remixFrame: document.getElementById('remix-frame'),
   remixVisual: document.getElementById('remix-visual'),
@@ -200,37 +201,47 @@ export function setRemixStatus(message, isError = false) {
   remixStatus.classList.toggle('is-error', Boolean(message) && isError);
 }
 
+export function setSearchWarning(message) {
+  const { searchWarning } = elements;
+  if (!searchWarning) {
+    return;
+  }
+
+  const text = message || '';
+  searchWarning.textContent = text;
+  searchWarning.classList.toggle('is-visible', Boolean(text));
+}
+
 export function setRemixAvailability(enabled) {
-  const { remixPanel, remixQuickInput, remixToggleButton, remixInput } = elements;
+  const { remixPanel, remixToggleButton } = elements;
   if (remixPanel) {
     remixPanel.classList.toggle('is-disabled', !enabled);
-  }
-  if (remixQuickInput) {
-    remixQuickInput.classList.toggle('is-hidden', !enabled);
   }
   if (remixToggleButton) {
     remixToggleButton.disabled = !enabled;
   }
-  if (remixInput) {
-    remixInput.disabled = !enabled;
-    if (!enabled) {
-      remixInput.value = '';
-    }
-  }
 }
 
 export function toggleRemixLoading(active) {
-  const { remixToggleButton, remixQuickInput, remixInput } = elements;
+  const { remixToggleButton, searchInput, searchSubmit, trendingImage } = elements;
   const disabled = Boolean(active);
 
   if (remixToggleButton) {
     remixToggleButton.disabled = disabled;
   }
-  if (remixQuickInput) {
-    remixQuickInput.classList.toggle('is-loading', disabled);
+  if (searchInput) {
+    searchInput.disabled = disabled;
   }
-  if (remixInput) {
-    remixInput.disabled = disabled;
+  if (searchSubmit) {
+    searchSubmit.disabled = disabled;
+  }
+  if (trendingImage) {
+    trendingImage.classList.toggle('is-loading', disabled);
+    if (disabled) {
+      trendingImage.setAttribute('aria-busy', 'true');
+    } else {
+      trendingImage.removeAttribute('aria-busy');
+    }
   }
 }
 
@@ -247,8 +258,8 @@ export function animateRemixGallery() {
 }
 
 export function setRemixPanelVisibility(visible) {
-  const { remixPanel, remixToggleButton, remixQuickInput, remixInput } = elements;
-  if (!remixPanel && !remixQuickInput) {
+  const { remixPanel, remixToggleButton, searchInput } = elements;
+  if (!remixPanel) {
     return;
   }
 
@@ -256,16 +267,13 @@ export function setRemixPanelVisibility(visible) {
   if (remixPanel) {
     remixPanel.classList.toggle('is-hidden', !shouldShow);
   }
-  if (remixQuickInput) {
-    remixQuickInput.classList.toggle('is-hidden', !shouldShow);
-  }
 
   if (remixToggleButton) {
     remixToggleButton.setAttribute('aria-expanded', String(shouldShow));
   }
 
-  if (shouldShow && remixInput && typeof remixInput.focus === 'function') {
-    remixInput.focus({ preventScroll: true });
+  if (shouldShow && searchInput && typeof searchInput.focus === 'function') {
+    searchInput.focus({ preventScroll: true });
   }
 }
 
@@ -280,6 +288,8 @@ export function setImageSource(url, { forceRefresh = false } = {}) {
   }
 
   trendingImage.src = url;
+  trendingImage.classList.remove('is-loading');
+  trendingImage.removeAttribute('aria-busy');
 }
 
 export function updateRatingCounts(slot, counts) {

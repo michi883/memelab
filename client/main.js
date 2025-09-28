@@ -15,6 +15,7 @@ import {
   showAnalysisError,
   setRemixAvailability,
   setRemixStatus,
+  setSearchWarning,
   toggleRemixLoading,
   animateRemixGallery,
   setImageSource,
@@ -32,9 +33,10 @@ const {
   trendingAuthor,
   trendingUps,
   trendingLink,
-  nextTrendingButton,
+  searchForm,
+  searchInput,
+  searchSubmit,
   analyzeButton,
-  remixInput,
   infoToggle,
   remixToggleButton,
   remixPanel,
@@ -43,10 +45,14 @@ const {
 } = elements;
 
 let trendingAfter = null;
+let lastSearchQuery = '';
 let trendingLoading = false;
 let currentMeme = null;
 let remixInProgress = false;
 let remixSupported = false;
+let pendingFetchRequest = null;
+const REMIX_PROMPT_MESSAGE = 'Describe how you want to remix this meme above.';
+const REMIX_HINT_MESSAGE = 'Type remix instructions above and press Remix (or Cmd/Ctrl+Enter).';
 
 const ratingStore = loadRatings();
 const fingerprintDefaults = HUMOR_FINGERPRINT_CATEGORIES.reduce((acc, { key }) => {
@@ -55,6 +61,11 @@ const fingerprintDefaults = HUMOR_FINGERPRINT_CATEGORIES.reduce((acc, { key }) =
 }, {});
 const fingerprint = loadFingerprint();
 let fingerprintCollapsed = loadFingerprintCollapsed();
+
+if (fingerprintCollapsed === null) {
+  fingerprintCollapsed = true;
+  persistFingerprintCollapsed(true);
+}
 
 renderHumorFingerprint(fingerprint);
 setFingerprintCollapsed(fingerprintCollapsed);
@@ -160,13 +171,17 @@ function persistFingerprint() {
 
 function loadFingerprintCollapsed() {
   if (typeof localStorage === 'undefined') {
-    return false;
+    return null;
   }
 
   try {
-    return localStorage.getItem(HUMOR_FINGERPRINT_COLLAPSED_KEY) === 'true';
+    const stored = localStorage.getItem(HUMOR_FINGERPRINT_COLLAPSED_KEY);
+    if (stored === null) {
+      return null;
+    }
+    return stored === 'true';
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -261,44 +276,80 @@ function clearCurrentMeme() {
   }
   setRemixAvailability(false);
   setRemixStatus('');
+  setSearchWarning('');
   syncRatingDisplay('original', null);
   syncRatingDisplay('remix', null);
 }
 
-async function fetchTrendingMeme(resetCursor = false) {
-  if (!nextTrendingButton || !trendingCard) {
+async function fetchTrendingMeme({ resetCursor = false, query: overrideQuery, allowDuplicate = false } = {}) {
+  if (!trendingCard) {
     return;
   }
 
   if (trendingLoading) {
+    pendingFetchRequest = { resetCursor, query: overrideQuery, allowDuplicate };
     return;
   }
+
+  const previousMeme = currentMeme;
+  const rawQuery = typeof overrideQuery === 'string' ? overrideQuery : searchInput?.value || '';
+  const activeQuery = rawQuery.trim();
+  const isSearch = Boolean(activeQuery);
 
   if (resetCursor) {
     trendingAfter = null;
   }
 
+  if (searchInput) {
+    searchInput.value = activeQuery;
+  }
+
   resetAnalysisPanel();
   clearCurrentMeme();
   setTrendingStatus('');
+  setRemixAvailability(false);
 
   trendingLoading = true;
-  nextTrendingButton.disabled = true;
+  if (searchInput) {
+    searchInput.disabled = true;
+  }
+  if (searchSubmit) {
+    searchSubmit.disabled = true;
+  }
+
   trendingCard.classList.remove('is-hidden');
   setLoadingOverlay(true);
 
   try {
-    const afterParam = trendingAfter ? { after: trendingAfter } : undefined;
-    const payload = await getTrending(afterParam);
+    const params = {};
+    if (trendingAfter) {
+      params.after = trendingAfter;
+    }
+    if (isSearch) {
+      params.query = activeQuery;
+    }
+
+    const payload = await getTrending(params);
     const meme = payload?.data;
     const page = payload?.page || {};
     remixSupported = Boolean(payload?.capabilities?.remix);
 
     if (!meme || !meme.imageUrl) {
-      throw new Error('Trending meme response is missing data');
+      throw new Error('Meme response is missing data');
     }
 
     trendingAfter = page.after ?? null;
+    lastSearchQuery = isSearch ? activeQuery : '';
+    const wasDuplicate =
+      !allowDuplicate &&
+      previousMeme &&
+      previousMeme.imageUrl &&
+      previousMeme.imageUrl === meme.imageUrl;
+
+    if (wasDuplicate && page.after) {
+      pendingFetchRequest = { resetCursor: false, query: activeQuery, allowDuplicate: true };
+      return;
+    }
 
     setImageSource(meme.imageUrl);
     if (trendingTitle) {
@@ -335,17 +386,26 @@ async function fetchTrendingMeme(resetCursor = false) {
     if (remixVisual) {
       remixVisual.removeAttribute('src');
     }
-    setRemixStatus(remixSupported ? '' : 'Remixing requires a configured Gemini API key.', !remixSupported);
+    if (remixSupported) {
+      setRemixStatus(REMIX_HINT_MESSAGE);
+      setSearchWarning('');
+    } else {
+      setRemixStatus('Remixing requires a configured Gemini API key.', true);
+      setSearchWarning('');
+    }
     setRemixAvailability(remixSupported && Boolean(currentMeme.imageUrl));
 
     setTrendingStatus('');
   } catch (error) {
     console.error(error);
-    setTrendingStatus(error.message || 'Failed to fetch trending meme', true);
+    setTrendingStatus(error.message || 'Failed to fetch meme', true);
   } finally {
     trendingLoading = false;
-    if (nextTrendingButton) {
-      nextTrendingButton.disabled = false;
+    if (searchInput) {
+      searchInput.disabled = false;
+    }
+    if (searchSubmit) {
+      searchSubmit.disabled = false;
     }
     if (analyzeButton) {
       analyzeButton.disabled = !currentMeme;
@@ -353,6 +413,13 @@ async function fetchTrendingMeme(resetCursor = false) {
     const canRemix = remixSupported && Boolean(currentMeme?.imageUrl);
     setRemixAvailability(canRemix);
     setLoadingOverlay(false);
+
+    const hasPending = Boolean(pendingFetchRequest);
+    if (hasPending) {
+      const nextRequest = pendingFetchRequest;
+      pendingFetchRequest = null;
+      void fetchTrendingMeme(nextRequest);
+    }
   }
 }
 
@@ -417,17 +484,27 @@ async function remixCurrentMeme(meme, instructions) {
   }
 }
 
-if (nextTrendingButton) {
-  nextTrendingButton.addEventListener('click', () => {
-    setRemixAvailability(false);
-    fetchTrendingMeme();
+if (searchForm) {
+  searchForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const queryValue = searchInput ? searchInput.value.trim() : '';
+    if (!queryValue) {
+      setSearchWarning('');
+      fetchTrendingMeme({ resetCursor: false });
+      return;
+    }
+
+    const isNewQuery = queryValue !== lastSearchQuery;
+    setSearchWarning('');
+    fetchTrendingMeme({ resetCursor: isNewQuery, query: queryValue });
   });
 }
 
 if (analyzeButton) {
   analyzeButton.addEventListener('click', () => {
     if (!currentMeme) {
-      setTrendingStatus('Fetch a meme first to analyze.', true);
+      setTrendingStatus('Search for a meme first to analyze.', true);
       return;
     }
 
@@ -439,7 +516,7 @@ setRemixPanelVisibility(false);
 
 function triggerRemix() {
   if (!currentMeme || !currentMeme.imageUrl) {
-    setRemixStatus('Fetch a meme first to remix.', true);
+    setRemixStatus('Search for a meme first to remix.', true);
     return;
   }
 
@@ -448,29 +525,39 @@ function triggerRemix() {
     return;
   }
 
-  const instructions = remixInput ? remixInput.value.trim() : '';
+  const instructions = searchInput ? searchInput.value.trim() : '';
   if (!instructions) {
-    setRemixStatus('Describe how you want to remix this meme.', true);
-    if (remixInput) {
-      remixInput.focus({ preventScroll: true });
+    setRemixStatus('', false);
+    setSearchWarning(REMIX_PROMPT_MESSAGE);
+    if (searchInput) {
+      searchInput.focus({ preventScroll: true });
     }
     return;
   }
 
+  setSearchWarning('');
   remixCurrentMeme(currentMeme, instructions);
 }
 
-if (remixInput) {
-  remixInput.addEventListener('keydown', (event) => {
+if (searchInput) {
+  searchInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       triggerRemix();
     }
   });
-  remixInput.addEventListener('blur', () => {
-    if (remixInput.value.trim()) {
+  searchInput.addEventListener('input', () => {
+    if (!searchInput.value.trim()) {
+      return;
+    }
+    const statusEl = elements.remixStatus;
+    if (!statusEl) {
+      return;
+    }
+    if (statusEl.textContent === REMIX_PROMPT_MESSAGE || statusEl.textContent === REMIX_HINT_MESSAGE) {
       setRemixStatus('');
     }
+    setSearchWarning('');
   });
 }
 

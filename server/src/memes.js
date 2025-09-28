@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { mockMemes } from './data/mockMemes.js';
 
 const REDDIT_HOT_URL = 'https://www.reddit.com/r/memes/hot.json';
+const REDDIT_SEARCH_URL = 'https://www.reddit.com/r/memes/search.json';
 const DEFAULT_IMAGE_MIME_TYPE = 'image/png';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5-mini';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -34,9 +35,22 @@ export function createMeme(req, res) {
 
 export async function getTrendingMeme(req, res) {
   const { after } = req.query;
-  const url = new URL(REDDIT_HOT_URL);
-  url.searchParams.set('limit', '5');
+  const rawQuery = typeof req.query?.q === 'string' ? req.query.q.trim() : '';
+  const query = rawQuery.slice(0, 120);
+  const usingSearch = Boolean(query);
+  const url = new URL(usingSearch ? REDDIT_SEARCH_URL : REDDIT_HOT_URL);
+  const limit = usingSearch ? '20' : '5';
+
+  url.searchParams.set('limit', limit);
   url.searchParams.set('raw_json', '1');
+
+  if (usingSearch) {
+    url.searchParams.set('q', query);
+    url.searchParams.set('restrict_sr', '1');
+    url.searchParams.set('sort', 'relevance');
+    url.searchParams.set('t', 'all');
+  }
+
   if (after) {
     url.searchParams.set('after', after);
   }
@@ -57,11 +71,16 @@ export async function getTrendingMeme(req, res) {
     const children = payload?.data?.children ?? [];
     const listingAfter = payload?.data?.after ?? null;
 
+    const normalizedQuery = query.toLowerCase();
+
     const imagePost = children
       .map((child) => child?.data)
-      .find((post) => isImagePost(post));
+      .find((post) => isImagePost(post) && matchesQuery(post, normalizedQuery));
 
     if (!imagePost) {
+      if (usingSearch) {
+        return res.status(404).json({ error: `No memes found for "${query}". Try another keyword.` });
+      }
       return res.status(502).json({ error: 'No image meme found in this batch' });
     }
 
@@ -81,6 +100,7 @@ export async function getTrendingMeme(req, res) {
     return res.json({
       data: meme,
       page: { after: nextAfter },
+      ...(usingSearch ? { query } : {}),
       capabilities: { remix: Boolean(GEMINI_API_KEY) }
     });
   } catch (error) {
@@ -176,6 +196,27 @@ function selectImageUrl(post) {
   const rawUrl =
     post?.url_overridden_by_dest || post?.url || post?.preview?.images?.[0]?.source?.url;
   return typeof rawUrl === 'string' ? rawUrl.replace(/&amp;/g, '&') : '';
+}
+
+function matchesQuery(post, normalizedQuery) {
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const terms = normalizedQuery
+    .split(/\s+/)
+    .map((term) => term.trim())
+    .filter(Boolean);
+
+  if (!terms.length) {
+    return true;
+  }
+
+  const title = (post?.title || '').toLowerCase();
+  const selftext = (post?.selftext || '').toLowerCase();
+  const flair = (post?.link_flair_text || '').toLowerCase();
+
+  return terms.some((term) => title.includes(term) || selftext.includes(term) || flair.includes(term));
 }
 
 async function analyzeImageWithOpenAI({ title, imageUrl, base64, contentType }) {

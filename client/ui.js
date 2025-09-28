@@ -1,4 +1,4 @@
-import { STATUS_MESSAGES } from './constants.js';
+import { STATUS_MESSAGES, HUMOR_FINGERPRINT_CATEGORIES } from './constants.js';
 
 export const elements = {
   trendingCard: document.getElementById('trending-card'),
@@ -24,7 +24,13 @@ export const elements = {
   remixVisual: document.getElementById('remix-visual'),
   remixToggleButton: document.getElementById('remix-toggle'),
   memeVisuals: document.querySelector('.meme-visuals'),
-  yearBadge: document.getElementById('year')
+  yearBadge: document.getElementById('year'),
+  fingerprintPolygon: document.getElementById('fingerprint-polygon'),
+  fingerprintPoints: document.querySelectorAll('.fingerprint-point'),
+  fingerprintLegend: document.querySelectorAll('.fingerprint-legend li'),
+  fingerprintWidget: document.getElementById('fingerprint-widget'),
+  fingerprintToggle: document.getElementById('fingerprint-toggle'),
+  fingerprintFab: document.getElementById('fingerprint-fab')
 };
 
 if (elements.analyzeButton) {
@@ -69,6 +75,7 @@ export function resetAnalysisPanel() {
   analysisPanel.classList.remove('is-loading');
   analysisTags.innerHTML = '';
   analysisStatus.textContent = '';
+  analysisStatus.classList.add('is-hidden');
   if (analysisSummary) {
     analysisSummary.textContent = '';
     analysisSummary.classList.add('is-hidden');
@@ -106,6 +113,7 @@ export function showAnalysisLoading() {
   analysisPanel.classList.add('is-loading');
   analysisTags.innerHTML = '';
   analysisStatus.textContent = STATUS_MESSAGES.analysisLoading;
+  analysisStatus.classList.remove('is-hidden');
   if (analysisSummary) {
     analysisSummary.textContent = '';
     analysisSummary.classList.add('is-hidden');
@@ -136,14 +144,12 @@ export function renderAnalysis(result) {
         })
         .join(' & ')
     : '';
-  let statusLabel = 'Humor Analysis';
+  let statusLabel = '';
   if (fallback) {
-    statusLabel += formattedReason ? ` (fallback – ${formattedReason})` : ' (fallback)';
-  } else if (provider) {
-    const readableProvider = provider === 'gpt-5' ? 'GPT-5' : provider.charAt(0).toUpperCase() + provider.slice(1);
-    statusLabel += ` (${readableProvider})`;
+    statusLabel = formattedReason ? `Fallback – ${formattedReason}` : 'Fallback analysis';
   }
   analysisStatus.textContent = statusLabel;
+  analysisStatus.classList.toggle('is-hidden', !statusLabel);
 
   const { categories = {}, tags = [] } = result || {};
   const baseTags = tags.length
@@ -177,6 +183,7 @@ export function showAnalysisError(message) {
   analysisPanel.classList.remove('is-loading');
   analysisTags.innerHTML = '';
   analysisStatus.textContent = message;
+  analysisStatus.classList.remove('is-hidden');
   if (analysisSummary) {
     analysisSummary.textContent = '';
     analysisSummary.classList.add('is-hidden');
@@ -273,4 +280,120 @@ export function setImageSource(url, { forceRefresh = false } = {}) {
   }
 
   trendingImage.src = url;
+}
+
+export function updateRatingCounts(slot, counts) {
+  const container = document.querySelector(`.meme-rating[data-meme-slot="${slot}"]`);
+  if (!container) {
+    return;
+  }
+
+  const upSpan = container.querySelector('span.thumb-count[data-direction="up"]');
+  const downSpan = container.querySelector('span.thumb-count[data-direction="down"]');
+  const upButton = container.querySelector('button.thumb-button[data-direction="up"]');
+  const downButton = container.querySelector('button.thumb-button[data-direction="down"]');
+
+  if (upSpan) {
+    upSpan.textContent = String(counts.up ?? 0);
+  }
+  if (downSpan) {
+    downSpan.textContent = String(counts.down ?? 0);
+  }
+  if (upButton) {
+    upButton.classList.toggle('is-active', counts.vote === 'up');
+  }
+  if (downButton) {
+    downButton.classList.toggle('is-active', counts.vote === 'down');
+  }
+}
+
+export function triggerThumbAnimation(button) {
+  if (!button) {
+    return;
+  }
+
+  button.classList.remove('is-exploding');
+  // Force reflow so animation can replay
+  void button.offsetWidth; // eslint-disable-line no-unused-expressions
+  button.classList.add('is-exploding');
+  setTimeout(() => {
+    button.classList.remove('is-exploding');
+  }, 450);
+}
+
+export function triggerMemeWiggle(slot) {
+  const frame = document.querySelector(`.meme-frame[data-meme-slot="${slot}"]`);
+  if (!frame) {
+    return;
+  }
+
+  frame.classList.remove('is-wiggling');
+  void frame.offsetWidth; // reflow
+  frame.classList.add('is-wiggling');
+  setTimeout(() => {
+    frame.classList.remove('is-wiggling');
+  }, 650);
+}
+
+export function renderHumorFingerprint(values = {}) {
+  const polygon = elements.fingerprintPolygon;
+  if (!polygon) {
+    return;
+  }
+
+  const center = 80;
+  const minRadius = 12;
+  const maxRadius = 60;
+  const points = [];
+
+  HUMOR_FINGERPRINT_CATEGORIES.forEach(({ key }, index) => {
+    const value = clamp01(values[key]);
+    const angle = (Math.PI * 2 * index) / HUMOR_FINGERPRINT_CATEGORIES.length - Math.PI / 2;
+    const radius = minRadius + maxRadius * value;
+    const x = center + radius * Math.cos(angle);
+    const y = center + radius * Math.sin(angle);
+    points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+
+    const pointNode = elements.fingerprintPoints?.[index];
+    if (pointNode) {
+      pointNode.setAttribute('cx', x.toFixed(1));
+      pointNode.setAttribute('cy', y.toFixed(1));
+    }
+  });
+
+  polygon.setAttribute('points', points.join(' '));
+
+  if (elements.fingerprintLegend) {
+    elements.fingerprintLegend.forEach((item, index) => {
+      const metric = HUMOR_FINGERPRINT_CATEGORIES[index]?.key;
+      const valueSpan = item.querySelector('.value');
+      if (valueSpan) {
+        valueSpan.textContent = Math.round(clamp01(values[metric]) * 100).toString();
+      }
+    });
+  }
+}
+
+function clamp01(raw) {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, value));
+}
+
+export function setFingerprintCollapsed(collapsed) {
+  const { fingerprintWidget, fingerprintToggle, fingerprintFab } = elements;
+  if (!fingerprintWidget) {
+    return;
+  }
+
+  fingerprintWidget.classList.toggle('is-collapsed', collapsed);
+  if (fingerprintToggle) {
+    fingerprintToggle.textContent = collapsed ? '+' : '−';
+    fingerprintToggle.setAttribute('aria-label', collapsed ? 'Expand humor fingerprint widget' : 'Collapse humor fingerprint widget');
+  }
+  if (fingerprintFab) {
+    fingerprintFab.style.display = collapsed ? 'block' : 'none';
+  }
 }

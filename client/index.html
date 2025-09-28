@@ -36,13 +36,25 @@
             <span class="loading-text">Fetching the funny…</span>
           </div>
           <div class="meme-visuals">
-            <figure class="meme-frame original">
+            <figure class="meme-frame original" data-meme-slot="original">
               <img id="trending-image" alt="Trending meme" />
               <figcaption>Original</figcaption>
+              <div class="meme-rating" data-meme-slot="original">
+                <button type="button" class="thumb-button thumb-up" data-direction="up" aria-label="Thumbs up original meme">👍</button>
+                <span class="thumb-count" data-direction="up">0</span>
+                <button type="button" class="thumb-button thumb-down" data-direction="down" aria-label="Thumbs down original meme">👎</button>
+                <span class="thumb-count" data-direction="down">0</span>
+              </div>
             </figure>
-            <figure id="remix-frame" class="meme-frame remix is-hidden">
+            <figure id="remix-frame" class="meme-frame remix is-hidden" data-meme-slot="remix">
               <img id="remix-visual" alt="Remixed meme" />
               <figcaption>Remix</figcaption>
+              <div class="meme-rating" data-meme-slot="remix">
+                <button type="button" class="thumb-button thumb-up" data-direction="up" aria-label="Thumbs up remixed meme">👍</button>
+                <span class="thumb-count" data-direction="up">0</span>
+                <button type="button" class="thumb-button thumb-down" data-direction="down" aria-label="Thumbs down remixed meme">👎</button>
+                <span class="thumb-count" data-direction="down">0</span>
+              </div>
             </figure>
           </div>
           <div class="remix-quick-input is-hidden" id="remix-quick-input">
@@ -114,9 +126,44 @@
     </main>
 
     <footer class="site-footer">
-      <small>&copy; <span id="year"></span> Meme Lab</small>
+      <small>&copy; <span id="year"></span> Humor Genome</small>
     </footer>
 
     <script type="module" src="./main.js"></script>
+
+    <aside id="fingerprint-widget" class="fingerprint-widget" aria-live="polite">
+      <div class="fingerprint-header">
+        <span class="fingerprint-title">Humor Fingerprint</span>
+        <button id="fingerprint-toggle" class="fingerprint-toggle" type="button" aria-label="Collapse humor fingerprint widget">−</button>
+      </div>
+      <svg id="fingerprint-chart" class="fingerprint-chart" viewBox="0 0 160 160" role="img" aria-label="Humor fingerprint radar chart">
+        <g class="fingerprint-grid">
+          <polygon class="grid-ring" points="80,10 146.6,58.4 121.1,136.6 38.9,136.6 13.4,58.4" />
+          <polygon class="grid-ring" points="80,30 127.6,64.5 109.4,120.5 50.6,120.5 32.4,64.5" />
+          <polygon class="grid-ring" points="80,50 108.5,70.7 97.6,104.3 62.4,104.3 51.5,70.7" />
+          <line x1="80" y1="80" x2="80" y2="10" />
+          <line x1="80" y1="80" x2="146.6" y2="58.4" />
+          <line x1="80" y1="80" x2="121.1" y2="136.6" />
+          <line x1="80" y1="80" x2="38.9" y2="136.6" />
+          <line x1="80" y1="80" x2="13.4" y2="58.4" />
+        </g>
+        <polygon id="fingerprint-polygon" class="fingerprint-polygon" points="80,40 110,70 100,110 60,110 50,70" />
+        <g class="fingerprint-points" id="fingerprint-points">
+          <circle class="fingerprint-point" data-metric="delight" r="4" cx="80" cy="40" />
+          <circle class="fingerprint-point" data-metric="wit" r="4" cx="120" cy="86" />
+          <circle class="fingerprint-point" data-metric="chaos" r="4" cx="102" cy="120" />
+          <circle class="fingerprint-point" data-metric="warmth" r="4" cx="58" cy="120" />
+          <circle class="fingerprint-point" data-metric="edge" r="4" cx="40" cy="86" />
+        </g>
+      </svg>
+      <ul class="fingerprint-legend">
+        <li data-metric="delight"><span class="dot"></span> Delight <span class="value">0</span></li>
+        <li data-metric="wit"><span class="dot"></span> Wit <span class="value">0</span></li>
+        <li data-metric="chaos"><span class="dot"></span> Chaos <span class="value">0</span></li>
+        <li data-metric="warmth"><span class="dot"></span> Warmth <span class="value">0</span></li>
+        <li data-metric="edge"><span class="dot"></span> Edge <span class="value">0</span></li>
+      </ul>
+      <button id="fingerprint-fab" class="fingerprint-fab" type="button" aria-label="Expand humor fingerprint widget">✨</button>
+    </aside>
   </body>
 </html>

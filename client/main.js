@@ -1,4 +1,9 @@
-import { STATUS_MESSAGES } from './constants.js';
+import {
+  STATUS_MESSAGES,
+  RATING_STORAGE_KEY,
+  HUMOR_FINGERPRINT_KEY,
+  HUMOR_FINGERPRINT_CATEGORIES
+} from './constants.js';
 import { getTrending, analyzeMeme as requestAnalysis, remixMeme as requestRemix } from './api.js';
 import {
   elements,
@@ -13,7 +18,12 @@ import {
   toggleRemixLoading,
   animateRemixGallery,
   setImageSource,
-  setRemixPanelVisibility
+  setRemixPanelVisibility,
+  updateRatingCounts,
+  triggerThumbAnimation,
+  triggerMemeWiggle,
+  renderHumorFingerprint,
+  setFingerprintCollapsed
 } from './ui.js';
 
 const {
@@ -38,12 +48,221 @@ let currentMeme = null;
 let remixInProgress = false;
 let remixSupported = false;
 
+const ratingStore = loadRatings();
+const fingerprintDefaults = HUMOR_FINGERPRINT_CATEGORIES.reduce((acc, { key }) => {
+  acc[key] = 0.35;
+  return acc;
+}, {});
+const fingerprint = loadFingerprint();
+let fingerprintCollapsed = loadFingerprintCollapsed();
+
+renderHumorFingerprint(fingerprint);
+setFingerprintCollapsed(fingerprintCollapsed);
+
+function loadRatings() {
+  if (typeof localStorage === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = localStorage.getItem(RATING_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistRatings() {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(ratingStore));
+  } catch {
+    // ignore persistence failures in UX experiment
+  }
+}
+
+function getRatingKey(slot, meme = currentMeme) {
+  const baseId = meme?.id || meme?.imageUrl || 'unknown';
+  return `${baseId}:${slot}`;
+}
+
+function getRatingEntry(slot, meme = currentMeme) {
+  const key = getRatingKey(slot, meme);
+  if (!ratingStore[key]) {
+    ratingStore[key] = { up: 0, down: 0, vote: null };
+  }
+  return ratingStore[key];
+}
+
+function syncRatingDisplay(slot, meme = currentMeme) {
+  if (!meme) {
+    updateRatingCounts(slot, { up: 0, down: 0, vote: null });
+    return;
+  }
+
+  const entry = getRatingEntry(slot, meme);
+  updateRatingCounts(slot, entry);
+}
+
+function getMemeForSlot(slot) {
+  if (!currentMeme) {
+    return null;
+  }
+
+  if (slot === 'remix') {
+    if (!remixFrame || remixFrame.classList.contains('is-hidden') || !remixVisual?.src) {
+      return null;
+    }
+  }
+
+  return currentMeme;
+}
+
+const FINGERPRINT_EFFECTS = {
+  original: {
+    up: { delight: 0.07, warmth: 0.06, edge: -0.04 },
+    down: { edge: 0.07, delight: -0.05, warmth: -0.03 }
+  },
+  remix: {
+    up: { chaos: 0.07, wit: 0.05, warmth: -0.02 },
+    down: { edge: 0.07, chaos: -0.04, wit: -0.03 }
+  }
+};
+
+function loadFingerprint() {
+  if (typeof localStorage === 'undefined') {
+    return { ...fingerprintDefaults };
+  }
+
+  try {
+    const raw = localStorage.getItem(HUMOR_FINGERPRINT_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return { ...fingerprintDefaults, ...parsed };
+  } catch {
+    return { ...fingerprintDefaults };
+  }
+}
+
+function persistFingerprint() {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    localStorage.setItem(HUMOR_FINGERPRINT_KEY, JSON.stringify(fingerprint));
+  } catch {
+    // ignore storage issues
+  }
+}
+
+function loadFingerprintCollapsed() {
+  if (typeof localStorage === 'undefined') {
+    return false;
+  }
+
+  try {
+    return localStorage.getItem(HUMOR_FINGERPRINT_COLLAPSED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function persistFingerprintCollapsed(value) {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    localStorage.setItem(HUMOR_FINGERPRINT_COLLAPSED_KEY, value ? 'true' : 'false');
+  } catch {
+    // ignore
+  }
+}
+
+function applyFingerprintEffect(effect = {}, multiplier = 1) {
+  Object.entries(effect).forEach(([metric, delta]) => {
+    const base = fingerprint[metric] ?? fingerprintDefaults[metric] ?? 0;
+    fingerprint[metric] = clampFraction(base + delta * multiplier);
+  });
+}
+
+function updateFingerprintForVote(slot, newVote, previousVote) {
+  const effects = FINGERPRINT_EFFECTS[slot] || {};
+
+  if (previousVote && effects[previousVote]) {
+    applyFingerprintEffect(effects[previousVote], -1);
+  }
+
+  if (newVote && effects[newVote]) {
+    applyFingerprintEffect(effects[newVote], 1);
+  }
+
+  persistFingerprint();
+  renderHumorFingerprint(fingerprint);
+}
+
+function clampFraction(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, numeric));
+}
+
+function handleRatingClick(button) {
+  const container = button.closest('.meme-rating');
+  if (!container) {
+    return;
+  }
+
+  const slot = container.dataset.memeSlot || 'original';
+  const direction = button.dataset.direction === 'down' ? 'down' : 'up';
+  const memeForSlot = getMemeForSlot(slot);
+
+  if (!memeForSlot) {
+    if (slot === 'remix') {
+      setRemixStatus('Remix the meme before rating it.', true);
+    }
+    return;
+  }
+
+  const entry = getRatingEntry(slot, memeForSlot);
+  const previousVote = entry.vote;
+
+  if (previousVote === direction) {
+    entry[direction] = Math.max(0, (entry[direction] || 0) - 1);
+    entry.vote = null;
+  } else {
+    if (previousVote) {
+      entry[previousVote] = Math.max(0, (entry[previousVote] || 0) - 1);
+    }
+    entry[direction] = (entry[direction] || 0) + 1;
+    entry.vote = direction;
+  }
+
+  updateFingerprintForVote(slot, entry.vote, previousVote);
+  persistRatings();
+  updateRatingCounts(slot, entry);
+  triggerThumbAnimation(button);
+  triggerMemeWiggle(slot);
+}
+
+document.querySelectorAll('.meme-rating .thumb-button').forEach((button) => {
+  button.addEventListener('click', () => handleRatingClick(button));
+});
+
 function clearCurrentMeme() {
   currentMeme = null;
   if (analyzeButton) {
     analyzeButton.disabled = true;
   }
   setRemixAvailability(false);
+  setRemixStatus('');
+  syncRatingDisplay('original', null);
+  syncRatingDisplay('remix', null);
 }
 
 async function fetchTrendingMeme(resetCursor = false) {
@@ -102,6 +321,9 @@ async function fetchTrendingMeme(resetCursor = false) {
       title: meme.title || '',
       imageUrl: meme.imageUrl || ''
     };
+
+    syncRatingDisplay('original', currentMeme);
+    syncRatingDisplay('remix', currentMeme);
 
     if (analyzeButton) {
       analyzeButton.disabled = false;
@@ -185,6 +407,7 @@ async function remixCurrentMeme(meme, instructions) {
 
     animateRemixGallery();
     setRemixStatus(STATUS_MESSAGES.remixReady);
+    syncRatingDisplay('remix', currentMeme);
   } catch (error) {
     console.error(error);
     setRemixStatus(error.message || STATUS_MESSAGES.remixFailed, true);
@@ -273,5 +496,26 @@ if (infoToggle) {
   });
 }
 
+syncRatingDisplay('original', null);
+syncRatingDisplay('remix', null);
 fetchTrendingMeme();
 setRemixAvailability(false);
+
+const fingerprintToggleButton = elements.fingerprintToggle;
+const fingerprintFab = elements.fingerprintFab;
+
+if (fingerprintToggleButton) {
+  fingerprintToggleButton.addEventListener('click', () => {
+    fingerprintCollapsed = !fingerprintCollapsed;
+    setFingerprintCollapsed(fingerprintCollapsed);
+    persistFingerprintCollapsed(fingerprintCollapsed);
+  });
+}
+
+if (fingerprintFab) {
+  fingerprintFab.addEventListener('click', () => {
+    fingerprintCollapsed = false;
+    setFingerprintCollapsed(false);
+    persistFingerprintCollapsed(false);
+  });
+}

@@ -163,6 +163,15 @@
                 <div class="remix-spinner" aria-hidden="true">
                   <span class="spinner-dot"></span>
                 </div>
+                <button id="download-original" class="download-button" type="button" aria-label="Download original meme">
+                  <svg class="download-icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
+                    <path
+                      d="M12 3a1 1 0 0 1 1 1v8.17l2.59-2.58a1 1 0 1 1 1.41 1.42l-4.3 4.29a1 1 0 0 1-1.4 0l-4.3-4.29a1 1 0 0 1 1.41-1.42L11 12.17V4a1 1 0 0 1 1-1Zm-6 13a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v1.5A2.5 2.5 0 0 1 16.5 21h-9A2.5 2.5 0 0 1 5 18.5V17a1 1 0 0 1 1-1Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span class="visually-hidden">Download original</span>
+                </button>
               </div>
               <figcaption>Original</figcaption>
               <div class="meme-rating" data-meme-slot="original">
@@ -173,7 +182,18 @@
               </div>
             </figure>
             <figure id="remix-frame" class="meme-frame remix is-hidden" data-meme-slot="remix">
-              <img id="remix-visual" alt="Remixed meme" />
+              <div class="trending-figure">
+                <img id="remix-visual" alt="Remixed meme" />
+                <button id="download-remix" class="download-button" type="button" aria-label="Download remixed meme">
+                  <svg class="download-icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
+                    <path
+                      d="M12 3a1 1 0 0 1 1 1v8.17l2.59-2.58a1 1 0 1 1 1.41 1.42l-4.3 4.29a1 1 0 0 1-1.4 0l-4.3-4.29a1 1 0 0 1 1.41-1.42L11 12.17V4a1 1 0 0 1 1-1Zm-6 13a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v1.5A2.5 2.5 0 0 1 16.5 21h-9A2.5 2.5 0 0 1 5 18.5V17a1 1 0 0 1 1-1Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span class="visually-hidden">Download remix</span>
+                </button>
+              </div>
               <figcaption>Remix</figcaption>
               <div class="meme-rating" data-meme-slot="remix">
                 <button type="button" class="thumb-button thumb-up" data-direction="up" aria-label="Thumbs up remixed meme">👍</button>

@@ -41,7 +41,9 @@ const {
   remixToggleButton,
   remixPanel,
   remixFrame,
-  remixVisual
+  remixVisual,
+  downloadOriginalButton,
+  downloadRemixButton
 } = elements;
 
 let trendingAfter = null;
@@ -53,6 +55,8 @@ let remixSupported = false;
 let pendingFetchRequest = null;
 const REMIX_PROMPT_MESSAGE = 'Describe how you want to remix this meme above.';
 const REMIX_HINT_MESSAGE = 'Type remix instructions above and press Remix (or Cmd/Ctrl+Enter).';
+let originalImageUrl = '';
+let remixImageUrl = '';
 
 const ratingStore = loadRatings();
 const fingerprintDefaults = HUMOR_FINGERPRINT_CATEGORIES.reduce((acc, { key }) => {
@@ -352,6 +356,7 @@ async function fetchTrendingMeme({ resetCursor = false, query: overrideQuery, al
     }
 
     setImageSource(meme.imageUrl);
+    originalImageUrl = meme.imageUrl;
     if (trendingTitle) {
       trendingTitle.textContent = meme.title || 'Untitled meme';
     }
@@ -386,6 +391,7 @@ async function fetchTrendingMeme({ resetCursor = false, query: overrideQuery, al
     if (remixVisual) {
       remixVisual.removeAttribute('src');
     }
+    remixImageUrl = '';
     if (remixSupported) {
       setRemixStatus(REMIX_HINT_MESSAGE);
       setSearchWarning('');
@@ -471,6 +477,7 @@ async function remixCurrentMeme(meme, instructions) {
       remixVisual.src = editedImageUrl;
       remixVisual.alt = `Remixed meme based on ${meme.title || 'original'}`;
     }
+    remixImageUrl = editedImageUrl;
 
     animateRemixGallery();
     setRemixStatus(STATUS_MESSAGES.remixReady);
@@ -558,6 +565,44 @@ if (searchInput) {
       setRemixStatus('');
     }
     setSearchWarning('');
+  });
+}
+
+function triggerDownload(url, filename) {
+  if (!url) {
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+if (downloadOriginalButton) {
+  downloadOriginalButton.addEventListener('click', () => {
+    if (!currentMeme || !originalImageUrl) {
+      setRemixStatus('Fetch a meme before downloading.', true);
+      return;
+    }
+    const filename = `${currentMeme.title || 'original-meme'}.jpg`;
+    triggerDownload(originalImageUrl, filename);
+    setRemixStatus('Original meme downloaded.');
+  });
+}
+
+if (downloadRemixButton) {
+  downloadRemixButton.addEventListener('click', () => {
+    if (!remixImageUrl) {
+      setRemixStatus('Remix the meme before downloading.', true);
+      return;
+    }
+    const filename = `${currentMeme?.title || 'remixed-meme'}-remix.jpg`;
+    triggerDownload(remixImageUrl, filename);
+    setRemixStatus('Remixed meme downloaded.');
   });
 }
 

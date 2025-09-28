@@ -24,6 +24,8 @@ export const elements = {
   remixFrame: document.getElementById('remix-frame'),
   remixVisual: document.getElementById('remix-visual'),
   remixToggleButton: document.getElementById('remix-toggle'),
+  downloadOriginalButton: document.getElementById('download-original'),
+  downloadRemixButton: document.getElementById('download-remix'),
   memeVisuals: document.querySelector('.meme-visuals'),
   yearBadge: document.getElementById('year'),
   fingerprintPolygon: document.getElementById('fingerprint-polygon'),

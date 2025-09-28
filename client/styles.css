@@ -342,6 +342,47 @@ main {
   width: 100%;
 }
 
+.download-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgba(16, 24, 46, 0.9), rgba(30, 44, 74, 0.9));
+  color: rgba(220, 232, 255, 0.85);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(2, 6, 14, 0.45);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.download-button .download-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: currentColor;
+}
+
+.trending-figure:hover .download-button,
+.trending-figure:focus-within .download-button,
+.download-button:focus-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.download-button:focus-visible {
+  outline: 2px solid rgba(140, 195, 255, 0.8);
+  outline-offset: 3px;
+}
+
+.download-button:hover {
+  color: #f4f8ff;
+}
+
 .remix-spinner {
   position: absolute;
   inset: 0;

@@ -1,5 +1,4 @@
 import fetch from 'node-fetch';
-import { mockMemes } from './data/mockMemes.js';
 
 const REDDIT_HOT_URL = 'https://www.reddit.com/r/memes/hot.json';
 const REDDIT_SEARCH_URL = 'https://www.reddit.com/r/memes/search.json';
@@ -9,29 +8,6 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-image-preview';
-
-export function getMemes(req, res) {
-  res.json({ data: mockMemes });
-}
-
-export function createMeme(req, res) {
-  const { title, imageUrl } = req.body;
-
-  if (!title || !imageUrl) {
-    return res.status(400).json({ error: 'Both title and imageUrl are required' });
-  }
-
-  const newMeme = {
-    id: String(Date.now()),
-    title,
-    imageUrl,
-    createdAt: new Date().toISOString()
-  };
-
-  mockMemes.unshift(newMeme);
-
-  res.status(201).json({ data: newMeme });
-}
 
 export async function getTrendingMeme(req, res) {
   const { after } = req.query;

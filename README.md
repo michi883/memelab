@@ -1,27 +1,28 @@
-# Meme Lab Starter Template
+# Meme Lab
 
-A minimal full-stack starter for Meme Lab featuring a Node.js + Express API and a vanilla JavaScript frontend. The app highlights trending memes from Reddit's `r/memes` subreddit, offers GPT-powered analysis, and supports Gemini-based remixes when API keys are configured.
+A full-stack playground for exploring internet humor. The Node.js + Express backend fetches live content from Reddit's `r/memes`, optionally enriches it with GPT-based analysis and Gemini remixing, while a lightweight vanilla JS frontend presents the experience.
 
 ## Project structure
 
 ```
 memelab/
-├── client/          # Static frontend (HTML, CSS, JS)
+├── client/
 │   ├── index.html
 │   ├── main.js
 │   ├── styles.css
 │   └── package.json
-├── server/          # Node.js backend API
+├── server/
 │   ├── package.json
 │   ├── public/
 │   └── src/
 │       ├── app.js
 │       ├── memes.js
 │       ├── routes.js
-│       ├── data/
 │       └── server.js
 └── README.md
 ```
+
+There is no longer an in-memory mock dataset—the app always pulls Reddit content (unless you add your own source).
 
 ## Getting started
 
@@ -29,15 +30,16 @@ memelab/
 
 1. `cd server`
 2. `npm install`
-3. Copy `.env.example` to `.env` and adjust values if needed.
-4. Provide `OPENAI_API_KEY` in `.env` (and optionally override `OPENAI_MODEL`, which defaults to `gpt-5-mini`) if you want GPT-5-backed analysis; otherwise the server falls back to heuristic tags.
+3. Copy `.env.example` to `.env`
+4. Populate the file:
+   - `OPENAI_API_KEY` (optional but required for GPT-powered analysis)
+   - `OPENAI_MODEL` (optional, defaults to `gpt-5-mini`)
+   - `GEMINI_API_KEY` and optional `GEMINI_MODEL` for image remixing
 5. `npm run dev`
 
-The API listens on `http://localhost:5000` by default.
+The API runs at `http://localhost:5000`.
 
 ### Frontend
-
-Use the bundled static dev server so the app is hosted from `http://localhost:5173` instead of loading the HTML file directly:
 
 ```bash
 cd client
@@ -45,24 +47,29 @@ npm install
 npm run dev
 ```
 
-Then visit `http://localhost:5173`.
+Visit `http://localhost:5173`.
 
-You will see a **Trending from r/memes** panel with controls to fetch, analyze, and remix the latest posts.
+## Using the app
 
-- Use **Fetch Meme 🎲** to grab the next meme from Reddit (optionally continuing with the `after` token provided by the backend).
-- Hit **Analyze** to send the current meme (title plus image content) to GPT-5 Mini for Humor Genome tags and a one-line summary—falling back to an error message when no API key is present.
-- Enter remix instructions and press **Remix with AI ⚡** to generate a fresh variation with Gemini, provided a Gemini API key is configured.
+- **Search / Remix field** – the single input drives both searching and remixing.
+  - Enter a keyword (e.g. “dog”) and hit the search icon to query Reddit. Submit an empty field to fetch the next unfiltered meme.
+  - After a meme is loaded, type remix instructions in the same field and press **Remix** (or Cmd/Ctrl+Enter) to spawn a new version when Gemini is configured.
+- **Analyze** – sends the current meme (title + image) to GPT. Without an OpenAI key, the button stays disabled.
+- **Download icons** – hovering a meme reveals a subtle download action. Originals and remixes open in a new tab for saving.
 
 ## API routes
 
-- `GET /api/health` – simple health check.
-- `GET /api/memes/trending?after=<token>` – proxies Reddit hot posts from `r/memes`, returning a pagination token in `page.after` when more results are available.
-- `GET /api/memes` – returns the in-memory meme list (legacy endpoint, handy if you want to reintroduce custom memes).
-- `POST /api/memes` – accepts `{ "title": string, "imageUrl": string }` and adds a new meme to the list.
-- `POST /api/memes/analyze` – GPT-5 categorisation when `OPENAI_API_KEY` is set, otherwise heuristic fallback.
+- `GET /api/health` – health probe.
+- `GET /api/memes/trending` – fetches the next Reddit post. Accepts:
+  - `after` – Reddit pagination token
+  - `q` – optional search keyword (max 120 chars)
+- `POST /api/memes/analyze` – invokes GPT analysis (`OPENAI_API_KEY` required).
+- `POST /api/memes/remix` – sends instructions plus the original image to Gemini (`GEMINI_API_KEY` required).
 
-## Next steps
+Legacy `/api/memes` endpoints have been removed along with the mock data seed.
 
-- Cache Reddit responses or add rate limiting if you expect lots of trending requests.
-- Re-enable the custom meme composer or add sharing features when you need them.
-- Persist fetched memes locally to keep an archive of favorites.
+## Notes & ideas
+
+- Consider caching Reddit responses or respecting rate limit headers for production use.
+- The download buttons currently open assets in a new tab; swap in a Blob-based downloader if you need same-tab saves.
+- Styling is vanilla CSS—tweak `client/styles.css` to rebrand or theme the experience.

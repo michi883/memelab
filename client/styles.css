@@ -961,18 +961,6 @@ main {
   display: none;
 }
 
-.remix-status {
-  min-height: 1.25rem;
-  margin: 0 auto 1rem;
-  max-width: 620px;
-  text-align: center;
-  color: rgba(178, 197, 255, 0.85);
-}
-
-.remix-status.is-error {
-  color: #ff8a8a;
-}
-
 .remix-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
